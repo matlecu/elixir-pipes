@@ -1,4 +1,3 @@
-
 defmodule Pipe do
   @moduledoc """
   def inc(x), do: x + 1
@@ -19,23 +18,21 @@ defmodule Pipe do
   #     |> compile
 
   defmacro pipe_matching(test, pipes) do
-    do_pipe_matching((quote do: expr), (quote do: unquote(test) = expr), pipes)
+    merge_fun = matching_merge((quote do: expr), (quote do: unquote(test) = expr))
+    reduce_pipe(&reduce_piped/3, pipes,merge_fun)
   end
 
   defmacro pipe_matching(expr, test, pipes) do
-    do_pipe_matching(expr, test, pipes)
+    reduce_pipe(&reduce_piped/3, pipes, matching_merge(expr, test))
   end
 
-  defp do_pipe_matching(expr, test, pipes) do
-    [{h,_}|t] = Macro.unpipe(pipes)
-    Enum.reduce t, h, &(reduce_matching &1, &2, expr, test)
-  end
-
-  defp reduce_matching({x, pos}, acc, expr, test) do
+  defp matching_merge(expr, matching) do
     quote do
-      case unquote(acc) do
-        unquote(test) -> unquote(Macro.pipe(expr, x, pos))
-        acc -> acc
+      fn (acc, segment_fun) ->
+        case acc do
+          unquote(matching) -> segment_fun.(unquote(expr))
+          acc -> acc
+        end
       end
     end
   end
@@ -43,17 +40,19 @@ defmodule Pipe do
   #     pipe_while &(valid? &1),
   #     json_doc |> transform |> transform
 
+  # def inc(x) do x+1 end
+
   defmacro pipe_while(test, pipes) do
-    [{h,_}|t] = Macro.unpipe(pipes)
-    Enum.reduce t, h, &(reduce_if &1, &2, test)
+    reduce_pipe(&reduce_piped/3, pipes, if_merge(test))
   end
 
-  defp reduce_if({x, pos}, acc, test) do
+  def if_merge(test) do
     quote do
-      acc = unquote(acc)
-      case unquote(test).(acc) do
-        true  -> unquote(Macro.pipe((quote do: acc), x, pos))
-        false -> acc
+      fn (acc, segment_fun) ->
+        case unquote(test).(acc) do
+          true  -> segment_fun.(acc)
+          false -> acc
+        end
       end
     end
   end
@@ -64,14 +63,22 @@ defmodule Pipe do
   #   [ 1, 2, 3] |> &(&1 + 1) |> &(&1 * 2)
 
   defmacro pipe_with(fun, pipes) do
-    [{h,_}|t] = Macro.unpipe(pipes)
-    Enum.reduce t, h, &(reduce_with &1, &2, fun)
+    reduce_pipe(&reduce_piped/3, pipes, fun)
   end
 
-  defp reduce_with({segment, pos}, acc, outer) do
+  # the generic reduce system to implement all elixir pipes
+  # can reduce the piped functions, or just the segments of th pipe
+  # without piping the first argument in
+
+  defp reduce_pipe(reduce_fun, pipes, merge_fun) do
+    [{h,_}|t] = Macro.unpipe(pipes)
+    Enum.reduce t, h, &(reduce_fun.(&1, &2, merge_fun))
+  end
+
+  defp reduce_piped({segment, pos}, acc, with_fun) do
     pipe = Macro.pipe((quote do: x), segment, pos)
     quote do
-      unquote(outer).(unquote(acc), fn(x) -> unquote(pipe) end)
+      unquote(with_fun).(unquote(acc), fn(x) -> unquote(pipe) end)
     end
   end
 end
