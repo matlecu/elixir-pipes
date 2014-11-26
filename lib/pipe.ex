@@ -75,6 +75,13 @@ defmodule Pipe do
   #     pipe_accumulate_matching expr, test, merge_fun,
   #     initial value |> value to merge if match |> next value to merge if match
 
+  defmacro pipe_accumulate_matching(test, merge_fun, pipes) do
+    merge_fun = accumulate_matching_merge((quote do: expr),
+                                          (quote do: unquote(test) = expr),
+                                          merge_fun)
+    reduce_pipe(&reduce_unpiped/3, pipes, merge_fun)
+  end
+
   defmacro pipe_accumulate_matching(expr, test, merge_fun, pipes) do
     reduce_pipe(&reduce_unpiped/3, pipes, accumulate_matching_merge(expr, test, merge_fun))
   end
