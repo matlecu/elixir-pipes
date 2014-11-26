@@ -57,6 +57,22 @@ defmodule Pipe do
     end
   end
 
+  # each function of the pipe is wrapped by the wrapping_fun.
+  # The accumulated value is still passed as first argument
+  # fo the original segment.
+
+  defmacro pipe_wrapping(wrapper_fun, pipes) do
+    reduce_pipe(&reduce_piped/3, pipes, wrapping_merge(wrapper_fun))
+  end
+
+  defp wrapping_merge(wrapper_fun) do
+    quote do
+      fn (acc, segment_fun) ->
+        unquote(wrapper_fun).(segment_fun.(acc))
+      end
+    end
+  end
+
   #     pipe_accumulate merge_fun,
   #     initial value |> value to merge |> next value to merge
 
@@ -125,6 +141,12 @@ defmodule Pipe do
   defp reduce_unpiped({segment, _pos}, acc, with_fun) do
     quote do
       unquote(with_fun).(unquote(acc), fn() -> unquote(segment) end)
+    end
+  end
+
+  defp reduce_to_pipe({segment, _pos}, acc, wrapping_fun) do
+    quote do
+      unquote(acc) |> unquote(wrapping_fun).(unquote(segment))
     end
   end
 end

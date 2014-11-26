@@ -72,21 +72,6 @@ BANG.
 
 It would evaluate functions as long as the accumulator matched the expression. In this case, we process statements as long as the composition yields an `:ok` on the left hand side.
 
-### pipe_accumulate and pipe_accumulate_matching
-This function will execute the functions of the pipe without passing any new
-argument, and merge each result with the merging function.
-The pipe_accumulate_matching will keep doing this as long as the expression
-matches, the same way as pipe_matching.
-The first value can be seen as the initialization of the merge data structure.
-
-As an example, imagine you want to make a few API calls, and merge result while
-the call are successful, but return the error as soon as one fails:
-
-```
-pipe_accumulate_matching x, {:ok, x}, &Map.merge/2,
-  %{} |> API.get_user_data(123) |> API.get_avatar(123)
-```
-
 ### pipe_while
 
 Sometimes, you may want to test on something other than a match. This composition strategy will continue as long as your composition satisfies the test function you provide. To implement the above, you could do this just as well:
@@ -102,6 +87,35 @@ Sometimes, you may want to test on something other than a match. This compositio
 
 You could also write tests for testing a value, such as whether a value is even, whether a record is valid, or whether a user is authorized.
 
+### pipe_wrapping
+
+This will execute the pipe, wrapping each segment (but the first) with the
+wrapper_fun.
+```
+pipe_wrapping &fun/1,
+  0 |> fun2 |> fun3
+```
+is like:
+```
+  fun.(fun3(fun.(fun2(0))))
+```
+Can be useful to precess the answer of a series of API calls for instance.
+
+### pipe_accumulate and pipe_accumulate_matching
+
+This function will execute the functions of the pipe without passing any new
+argument, and merge each result with the merging function.
+The pipe_accumulate_matching will keep doing this as long as the expression
+matches, the same way as pipe_matching.
+The first value can be seen as the initialization of the merge data structure.
+
+As an example, imagine you want to make a few API calls, and merge result while
+the call are successful, but return the error as soon as one fails:
+
+```
+pipe_accumulate_matching x, {:ok, x}, &Map.merge/2,
+  %{} |> API.get_user_data(123) |> API.get_avatar(123)
+```
 ### pipe_with
 
 Sometimes, you want to write the composition rules yourself. You can do this with `pipe_with function, pipe` where function has a sig of `f(x, pipe_segment)` where `pipe_segment` is a function in the pipe. The macro will pass the accumulated value and a function that wraps each pipe segment to your function.

@@ -50,6 +50,12 @@ defmodule PipesTest do
                                                        [] |> ok_inc(4) |> nok_double(2))
   end
 
+  defmodule Wrapping do
+    use Pipe
+    def inc(x), do: x + 1
+    def double(x), do: x * 2
+    def wrapping_pipes, do: pipe_wrapping(&inc/1, 0 |> inc |> double)
+  end
 
   should "compose with identity function" do
     assert [-2, 0, 2] == Simple.with_pipes_identity
@@ -72,12 +78,16 @@ defmodule PipesTest do
     assert  {:ok, 4} == Matching.if_pipes
   end
 
-  should "accumulate pipes" do
+  should "pipe accumulate" do
     assert [4, 3, 5] == Accumulating.accumulating_pipes
   end
 
-  should "accumulate pipes matching" do
+  should "pipe accumulate matching" do
     assert [4, 5] == Accumulating.accumulate_matching_pipes
     assert {:nok, 4} == Accumulating.accumulate_unmatching_pipes
+  end
+
+  should "pipe wrapping" do
+    assert 5 == Wrapping.wrapping_pipes
   end
 end
