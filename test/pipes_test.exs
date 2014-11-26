@@ -33,6 +33,23 @@ defmodule PipesTest do
     def pipes_expr, do: pipe_matching(x, {:ok, x}, {:ok, 1} |> ok_inc |> ok_double )
   end
 
+  defmodule Accumulating do
+    use Pipe
+    def inc(x), do: x + 1
+    def double(x), do: x * 2
+    def ok_inc(x), do: {:ok, x + 1}
+    def ok_double(x), do: {:ok, x * 2}
+    def nok_double(x), do: {:nok, x * 2}
+    def accumulating_pipes, do: pipe_accumulate(fn(expr, acc) -> [expr|acc] end,
+                                                [] |> inc(4) |> 3 |> double(2))
+    def accumulate_matching_pipes, do: pipe_accumulate_matching(x, {:ok, x},
+                                                       fn(expr, acc) -> [expr|acc] end,
+                                                       [] |> ok_inc(4) |> ok_double(2))
+    def accumulate_unmatching_pipes, do: pipe_accumulate_matching(x, {:ok, x},
+                                                       fn(expr, acc) -> [expr|acc] end,
+                                                       [] |> ok_inc(4) |> nok_double(2))
+  end
+
 
   should "compose with identity function" do
     assert [-2, 0, 2] == Simple.with_pipes_identity
@@ -53,5 +70,14 @@ defmodule PipesTest do
 
   should "pipe if" do
     assert  {:ok, 4} == Matching.if_pipes
+  end
+
+  should "accumulate pipes" do
+    assert [4, 3, 5] == Accumulating.accumulating_pipes
+  end
+
+  should "accumulate pipes matching" do
+    assert [4, 5] == Accumulating.accumulate_matching_pipes
+    assert {:nok, 4} == Accumulating.accumulate_unmatching_pipes
   end
 end

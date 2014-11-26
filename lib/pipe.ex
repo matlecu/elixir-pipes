@@ -19,7 +19,7 @@ defmodule Pipe do
 
   defmacro pipe_matching(test, pipes) do
     merge_fun = matching_merge((quote do: expr), (quote do: unquote(test) = expr))
-    reduce_pipe(&reduce_piped/3, pipes,merge_fun)
+    reduce_pipe(&reduce_piped/3, pipes, merge_fun)
   end
 
   defmacro pipe_matching(expr, test, pipes) do
@@ -46,12 +46,45 @@ defmodule Pipe do
     reduce_pipe(&reduce_piped/3, pipes, if_merge(test))
   end
 
-  def if_merge(test) do
+  defp if_merge(test) do
     quote do
       fn (acc, segment_fun) ->
         case unquote(test).(acc) do
           true  -> segment_fun.(acc)
           false -> acc
+        end
+      end
+    end
+  end
+
+  #     pipe_accumulate merge_fun,
+  #     initial value |> value to merge |> next value to merge
+
+  defmacro pipe_accumulate(merge_fun, pipes) do
+    reduce_pipe(&reduce_unpiped/3, pipes, accumulate_merge(merge_fun))
+  end
+
+  defp accumulate_merge(merge_fun) do
+    quote do
+      fn (acc, segment_fun) ->
+        unquote(merge_fun).(segment_fun.(), acc)
+      end
+    end
+  end
+
+  #     pipe_accumulate_matching expr, test, merge_fun,
+  #     initial value |> value to merge if match |> next value to merge if match
+
+  defmacro pipe_accumulate_matching(expr, test, merge_fun, pipes) do
+    reduce_pipe(&reduce_unpiped/3, pipes, accumulate_matching_merge(expr, test, merge_fun))
+  end
+
+  defp accumulate_matching_merge(expr, test, merge_fun) do
+    quote do
+      fn (acc, segment_fun) ->
+        case segment_fun.() do
+          unquote(test) -> unquote(merge_fun).(unquote(expr), acc)
+          non_match -> non_match
         end
       end
     end
@@ -79,6 +112,12 @@ defmodule Pipe do
     pipe = Macro.pipe((quote do: x), segment, pos)
     quote do
       unquote(with_fun).(unquote(acc), fn(x) -> unquote(pipe) end)
+    end
+  end
+
+  defp reduce_unpiped({segment, _pos}, acc, with_fun) do
+    quote do
+      unquote(with_fun).(unquote(acc), fn() -> unquote(segment) end)
     end
   end
 end
