@@ -91,7 +91,7 @@ You could also write tests for testing a value, such as whether a value is even,
 
 This will execute the pipe, wrapping each segment (but the first) with the
 wrapper_fun.
-```
+```elixir
 pipe_wrapping &fun/1,
   0 |> fun2 |> fun3
 ```
@@ -112,7 +112,7 @@ The first value can be seen as the initialization of the merge data structure.
 As an example, imagine you want to make a few API calls, and merge result while
 the call are successful, but return the error as soon as one fails:
 
-```
+```elixir
 pipe_accumulate_matching x, {:ok, x}, &Map.merge/2,
   %{} |> API.get_user_data(123) |> API.get_avatar(123)
 ```
@@ -141,6 +141,17 @@ or
 ```
 
 You could also wrap exceptions, and translate them to the form `{:error, acc}`, or change nils to blank strings or empty arrays.
+
+### do syntax
+You can also use a do end syntax for elixir-pies, like:
+```elixir
+pipe_matching {:ok, _} do
+  {:ok, ""} |> click |> click |> bang |> click
+end
+```
+
+
+
 
 Contributions are welcome. Just send a pull request (you must have tests). 
 

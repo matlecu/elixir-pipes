@@ -31,6 +31,10 @@ defmodule PipesTest do
     def pipes, do: pipe_matching({:ok, _}, {:ok, 1} |> inc |> double )
     def if_pipes, do: pipe_while(&if_test/1, {:ok, 1} |> inc |> double )
     def pipes_expr, do: pipe_matching(x, {:ok, x}, {:ok, 1} |> ok_inc |> ok_double )
+    def if_dopipes, do: pipe_while(&if_test/1, do: {:ok, 1} |> inc |> double )
+    def dopipes_expr do
+      pipe_matching(x, {:ok, x}) do {:ok, 1} |> ok_inc |> ok_double end
+    end
   end
 
   defmodule Accumulating do
@@ -48,6 +52,11 @@ defmodule PipesTest do
     def accumulate_unmatching_pipes, do: pipe_accumulate_matching(x, {:ok, x},
                                                        fn(expr, acc) -> [expr|acc] end,
                                                        [] |> ok_inc(4) |> nok_double(2))
+    def accumulate_unmatching_dopipes do
+      pipe_accumulate_matching x, {:ok, x}, fn(expr, acc) -> [expr|acc] end do
+        [] |> ok_inc(4) |> nok_double(2)
+      end
+    end
   end
 
   defmodule Wrapping do
@@ -55,6 +64,11 @@ defmodule PipesTest do
     def inc(x), do: x + 1
     def double(x), do: x * 2
     def wrapping_pipes, do: pipe_wrapping(&inc/1, 0 |> inc |> double)
+    def wrapping_dopipes do
+      pipe_wrapping(&inc/1) do
+        0 |> inc |> double
+      end
+    end
   end
 
   should "compose with identity function" do
@@ -89,5 +103,12 @@ defmodule PipesTest do
 
   should "pipe wrapping" do
     assert 5 == Wrapping.wrapping_pipes
+  end
+
+  should "pipes work with do notation" do
+    assert 5 == Wrapping.wrapping_dopipes
+    assert {:nok, 4} == Accumulating.accumulate_unmatching_dopipes
+    assert  {:ok, 4} == Matching.dopipes_expr
+    assert  {:ok, 4} == Matching.if_dopipes
   end
 end

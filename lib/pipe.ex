@@ -127,6 +127,12 @@ defmodule Pipe do
   # without piping the first argument in
 
   defp reduce_pipe(reduce_fun, pipes, merge_fun) do
+    # add support for do notation for pipes
+    pipes = case pipes do
+      [do: pipes] -> pipes
+      pipes -> pipes
+    end
+
     [{h,_}|t] = Macro.unpipe(pipes)
     Enum.reduce t, h, &(reduce_fun.(&1, &2, merge_fun))
   end
