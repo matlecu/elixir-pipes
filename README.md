@@ -162,7 +162,7 @@ You can use this to format API call response before the gets accumulated for
 instance:
 
 ```elixir
-pipe_accumulate_matching x, {:ok, x}, &Map.merge/2, &API.format_answer/1 do
+pipe_accumulate_matching x, {:ok, x}, &Map.merge/2, &API.format_response/1 do
   %{} |> API.get_user_data(123) |> API.get_avatar(123)
 end
 ```
