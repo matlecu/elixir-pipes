@@ -101,7 +101,7 @@ is like:
 ```
 Can be useful to precess the answer of a series of API calls for instance.
 
-### pipe_accumulate and pipe_accumulate_matching
+### pipe_accumulate & pipe_accumulate_matching
 
 This function will execute the functions of the pipe without passing any new
 argument, and merge each result with the merging function.

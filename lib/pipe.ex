@@ -149,10 +149,4 @@ defmodule Pipe do
       unquote(with_fun).(unquote(acc), fn() -> unquote(segment) end)
     end
   end
-
-  defp reduce_to_pipe({segment, _pos}, acc, wrapping_fun) do
-    quote do
-      unquote(acc) |> unquote(wrapping_fun).(unquote(segment))
-    end
-  end
 end
