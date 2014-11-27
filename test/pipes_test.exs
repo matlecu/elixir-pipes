@@ -35,6 +35,10 @@ defmodule PipesTest do
     def dopipes_expr do
       pipe_matching(x, {:ok, x}) do {:ok, 1} |> ok_inc |> ok_double end
     end
+    def if_wrapped_pipes, do: pipe_while(&if_test/1, &inc/1,
+                                 {:ok, 1} |> inc |> double )
+    def pipes_wrapped_expr, do: pipe_matching(x, {:ok, x}, &inc/1,
+                                      {:ok, 1} |> ok_inc |> ok_double )
   end
 
   defmodule Accumulating do
@@ -57,6 +61,9 @@ defmodule PipesTest do
         [] |> ok_inc(4) |> nok_double(2)
       end
     end
+    def accumulating_wrapped_pipes, do: pipe_accumulate(fn(expr, acc) -> [expr|acc] end,
+                                                        &inc/1,
+                                                        [] |> inc(4) |> 3 |> double(2))
   end
 
   defmodule Wrapping do
@@ -110,5 +117,11 @@ defmodule PipesTest do
     assert {:nok, 4} == Accumulating.accumulate_unmatching_dopipes
     assert  {:ok, 4} == Matching.dopipes_expr
     assert  {:ok, 4} == Matching.if_dopipes
+  end
+
+  should "pipes work with wrapping" do
+    assert [5, 4, 6] == Accumulating.accumulating_wrapped_pipes
+    assert {:ok, 7}  == Matching.if_wrapped_pipes
+    assert {:ok, 7}  == Matching.pipes_wrapped_expr
   end
 end

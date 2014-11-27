@@ -116,6 +116,7 @@ the call are successful, but return the error as soon as one fails:
 pipe_accumulate_matching x, {:ok, x}, &Map.merge/2,
   %{} |> API.get_user_data(123) |> API.get_avatar(123)
 ```
+
 ### pipe_with
 
 Sometimes, you want to write the composition rules yourself. You can do this with `pipe_with function, pipe` where function has a sig of `f(x, pipe_segment)` where `pipe_segment` is a function in the pipe. The macro will pass the accumulated value and a function that wraps each pipe segment to your function.
@@ -143,10 +144,26 @@ or
 You could also wrap exceptions, and translate them to the form `{:error, acc}`, or change nils to blank strings or empty arrays.
 
 ### do syntax
+
 You can also use a do end syntax for elixir-pies, like:
 ```elixir
 pipe_matching {:ok, _} do
   {:ok, ""} |> click |> click |> bang |> click
+end
+```
+
+### wrapping pipe segments
+
+Sometimes, it can be useful to perform a function on each segment of the pipe,
+before it gets passed or accumulated. All pipe macros of maximum arrity accept
+a wrapper_fun before the pipe.
+
+You can use this to format API call response before the gets accumulated for
+instance:
+
+```elixir
+pipe_accumulate_matching x, {:ok, x}, &Map.merge/2, &API.format_answer/1 do
+  %{} |> API.get_user_data(123) |> API.get_avatar(123)
 end
 ```
 
