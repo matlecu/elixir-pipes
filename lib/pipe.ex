@@ -40,8 +40,6 @@ defmodule Pipe do
   #     pipe_while &(valid? &1),
   #     json_doc |> transform |> transform
 
-  # def inc(x) do x+1 end
-
   defmacro pipe_while(test, pipes) do
     reduce_pipe(&reduce_piped/3, pipes, if_merge(test))
   end
